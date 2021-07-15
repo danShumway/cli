@@ -126,6 +126,43 @@ t.test('should install globally using Arborist', (t) => {
   })
 })
 
+t.test('should throw if package-lock.json or npm-shrinkwrap missing and --from-lockfile specified', (t) => {
+  const testDir = t.testdir({
+    'package.json': JSON.stringify({
+      name: 'foo',
+      version: '1.2.3',
+    }),
+  })
+
+  const Install = t.mock('../../lib/install.js', {
+    '@npmcli/run-script': opts => {},
+    '../../lib/utils/reify-finish.js': async () => {},
+    npmlog: {
+      verbose: () => {
+        t.ok(true, 'log fn called')
+      },
+    },
+  })
+  const npm = mockNpm({
+    prefix: testDir,
+    globalDir: 'path/to/node_modules/',
+    config: {
+      'from-lockfile': true,
+      global: false,
+    },
+    flatOptions: {
+      'from-lockfile': true,
+      global: false,
+    },
+  })
+  const install = new Install(npm)
+  install.exec([], (err, res) => {
+    t.match(err, /package-lock.json/, 'throws error when there is no package-lock')
+    t.notOk(res)
+    t.end()
+  })
+})
+
 t.test('completion to folder', async t => {
   const Install = t.mock('../../lib/install.js', {
     '../../lib/utils/reify-finish.js': async () => {},
